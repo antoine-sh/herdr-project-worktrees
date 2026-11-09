@@ -66,7 +66,7 @@ A worktree that appears while the panel runs gets its own space, **without takin
 ## 📦 Install
 
 ```sh
-git clone <repo-url> ~/.config/herdr-app/mods/project-worktrees
+git clone https://github.com/antoine-sh/herdr-project-worktrees.git ~/.config/herdr-app/mods/project-worktrees
 herdr-app check ~/.config/herdr-app/mods/project-worktrees
 ```
 
