@@ -5,7 +5,7 @@
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
 import { run, theme, spaces, panes, focused } from "herdr";
-import { checkouts } from "./git.js";
+import { checkouts, withStates } from "./git.js";
 import { inside, place, spaceOf } from "./locate.js";
 import { autoOpener } from "./autoopen.js";
 
@@ -30,7 +30,8 @@ export default class ProjectWorktrees extends View {
     if (!cur?.folder) return;
     cx.spawn(async (cx) => {
       try {
-        const repo = await checkouts(cur.folder, cur.on);
+        const found = await checkouts(cur.folder, cur.on);
+        const repo = found && await withStates(found, cur.on);
         const key = JSON.stringify([cur.on, repo]);
         if (repo) this.autoOpen(repo, cur.on);
         if (key !== this.key) { this.key = key; this.repo = repo; this.on = cur.on; cx.notify(); }
@@ -55,16 +56,17 @@ export default class ProjectWorktrees extends View {
     }
     const ss = spaces(), ps = panes();
     return v_flex().size_full().p(8).gap(2).text_size(12).child(
-      div().px(6).pb(4).text_size(11).text_color(t.muted).font_semibold().child(`${repo.name} worktrees`),
+      div().mx(-8).mt(-8).px(16).h(41).pt(14).pb(5).flex_none().text_size(11.5).font_medium().text_color(t.dim).child("Worktrees"),
     ).child(
       v_flex().flex_1().overflow_y_scrollbar().children(repo.list.map((c) => {
-        const s = spaceOf(c.path, repo.list, this.on, ss, ps);
         const here = cur?.folder && spaceOf(c.path, repo.list, this.on, ss, ps)?.id === focused()?.space;
         return h_flex().id(`wt-${c.path}`).px(6).py(4).gap(8).rounded(6).items_center()
           .hover((x) => x.bg(t.hover)).when(here, (el) => el.bg(t.selected))
           .on_click(() => this.open(c))
-          .child(div().flex_1().truncate().text_color(here ? t.foreground : t.muted).child(c.branch))
-          .child(div().flex_none().text_size(10).text_color(s ? t.accent : t.dim).child(s ? "open" : c.main ? "main" : ""));
+          .child(div().flex_none().text_size(14).text_color(c.state === "changes" ? t.ansi10 : c.state === "merged" ? t.ansi13 : t.muted).child("●"))
+          .child(div().truncate().text_color(here ? t.foreground : t.muted).child(c.branch))
+          .child(div().flex_1())
+          .child(div().flex_none().text_size(10).text_color(t.dim).child(c.main ? "main" : ""));
       })),
     );
   }

@@ -25,3 +25,22 @@ export async function checkouts(folder, on) {
   }
   return { name: main.split("/").pop(), list: out };
 }
+
+// "changes" (uncommitted work, or commits not in the main checkout's branch),
+// "merged" (clean, its commits already in that branch), else "clean".
+async function state(c, base, on) {
+  const st = await git(c.path, ["status", "--porcelain"], on);
+  if (st.ok && st.out) return "changes";
+  if (c.main || !base || c.branch === "(detached)") return "clean";
+  const ahead = await git(c.path, ["rev-list", "--count", `${base}..HEAD`], on);
+  if (ahead.ok && ahead.out !== "0") return "changes";
+  const same = await git(c.path, ["rev-parse", "HEAD", base], on);
+  const [a, b] = same.out.split("\n");
+  return same.ok && a !== b ? "merged" : "clean";
+}
+
+export async function withStates(repo, on) {
+  const base = repo.list[0]?.branch;
+  await Promise.all(repo.list.map(async (c) => { c.state = await state(c, base, on); }));
+  return repo;
+}
