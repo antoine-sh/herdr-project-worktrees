@@ -48,8 +48,10 @@ export default class ProjectWorktrees extends View {
   render(cx) {
     const t = theme();
     const cur = this.current();
-    // Re-read when focus moves to another project.
-    if (cur?.folder && this.repo && !this.repo.list.some((c) => inside(cur.folder, c.path))) this.refresh(cx);
+    // Re-read as soon as the focused space changes, or focus moves to another project.
+    const sid = focused()?.space;
+    if (sid !== this.space) { this.space = sid; this.refresh(cx); }
+    else if (cur?.folder && this.repo && !this.repo.list.some((c) => inside(cur.folder, c.path))) this.refresh(cx);
     const repo = this.repo;
     if (!repo || repo.list.length < 2) {
       return v_flex().size_full().p(10).text_size(12).text_color(t.dim).child(repo ? `${repo.name}: no other worktrees` : "No git project");
